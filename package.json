@@ -18,7 +18,7 @@
     "node": ">=12"
   },
   "dependencies": {
-    "@kubernetes/client-node": "^0.20.0",
+    "@kubernetes/client-node": "^0.22.0",
     "async": "^3.2.5",
     "gaxios": "^5.1.3"
   },
