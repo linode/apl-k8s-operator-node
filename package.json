@@ -40,7 +40,8 @@
     "clean": "rm -Rf node_modules/ dist/",
     "build": "tsc",
     "watch": "tsc --watch",
-    "prepare": "rm -Rf dist/ && npm run build"
+    "prepare": "rm -Rf dist/ && npm run build",
+    "build:package": "bin/generate-package.sh"
   },
   "keywords": [
     "kubernetes",
