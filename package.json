@@ -41,7 +41,8 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "prepare": "rm -Rf dist/ && npm run build",
-    "build:package": "bin/generate-package.sh"
+    "build:package": "bin/generate-package.sh",
+    "publish:package": "bin/publish-package.sh"
   },
   "keywords": [
     "kubernetes",
