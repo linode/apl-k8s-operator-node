@@ -3,9 +3,6 @@
 set -e
 
 org=linode
-repo='ssh://git@github.com/linode/apl-k8s-operator-node.git'
-
-
 
 type="node"
 version=$(jq -r '.version' package.json)
