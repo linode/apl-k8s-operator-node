@@ -306,14 +306,14 @@ export default abstract class Operator {
         });
 
         informer.on(ERROR, (err) => {
-            console.error(`Informer for ${id} encountered an error:`, err);
-            // Optionally restart the informer on error
+            console.debug(`Informer for ${id} encountered an error:`, err);
             setTimeout(() => informer.start(), 5000);
         });
 
         informer.on(CONNECT, () => {
             console.log(`Informer for ${id} connected`);
         })
+
         console.log(`Starting informer for ${id}`);
         await informer.start();
     }
