@@ -3,12 +3,14 @@ import * as FS from 'fs'
 import * as k8s from '@kubernetes/client-node'
 import * as https from 'https'
 import {
-    KubernetesObject,
-    loadYaml,
+    ADD,
+    CONNECT, DELETE, ERROR,
+    KubernetesObject, ListPromise,
+    loadYaml, makeInformer, UPDATE,
     V1CustomResourceDefinition,
     V1CustomResourceDefinitionVersion,
-    Watch,
-} from '@kubernetes/client-node'
+    Watch
+} from '@kubernetes/client-node';
 import { instance as gaxios, GaxiosOptions, Headers } from 'gaxios'
 
 /**
@@ -257,6 +259,63 @@ export default abstract class Operator {
         await startWatch()
 
         console.log(`watching resource ${id}`)
+    }
+
+
+    protected async informResource(
+        version: string,
+        plural: string,
+        onEvent: (event: ResourceEvent) => Promise<void>,
+        listFn: ListPromise<KubernetesObject>,
+        group?: string,
+        namespace?: string
+    ): Promise<void> {
+        const apiVersion = group ? `${group}/${version}` : `${version}`;
+        const id = `${plural}.${apiVersion}`;
+
+        const path = group
+            ? `/apis/${group}/${version}${namespace ? `/namespaces/${namespace}` : ''}/${plural}`
+            : `/api/${version}${namespace ? `/namespaces/${namespace}` : ''}/${plural}`;
+
+
+        // Use the passed-in listFn to retrieve resources
+        const informer = makeInformer<KubernetesObject>(this.kubeConfig, path, listFn);
+
+        informer.on(ADD, (obj: KubernetesObject) => {
+            onEvent({
+                type: ResourceEventType.Added,
+                object: obj,
+                meta: ResourceMetaImpl.createWithPlural(plural, obj),
+            });
+        });
+
+        informer.on(UPDATE, (obj: KubernetesObject) => {
+            onEvent({
+                type: ResourceEventType.Modified,
+                object: obj,
+                meta: ResourceMetaImpl.createWithPlural(plural, obj),
+            });
+        });
+
+        informer.on(DELETE, (obj: KubernetesObject) => {
+            onEvent({
+                type: ResourceEventType.Deleted,
+                object: obj,
+                meta: ResourceMetaImpl.createWithPlural(plural, obj),
+            });
+        });
+
+        informer.on(ERROR, (err) => {
+            console.error(`Informer for ${id} encountered an error:`, err);
+            // Optionally restart the informer on error
+            setTimeout(() => informer.start(), 5000);
+        });
+
+        informer.on(CONNECT, () => {
+            console.log(`Informer for ${id} connected`);
+        })
+        console.log(`Starting informer for ${id}`);
+        await informer.start();
     }
 
     /**
