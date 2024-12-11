@@ -164,6 +164,88 @@ You can optionally register a custom resource definition from code, to auto-crea
 
 ## Examples
 
+### Operator that informs on pods in a namespace
+
+```typescript
+import { CoreV1Api } from '@kubernetes/client-node';
+
+export default class MyOperator extends Operator {
+    protected async init() {
+        const coreV1Api = this.kubeConfig.makeApiClient(CoreV1Api)
+        const listFnBody = coreV1Api.listNamespacedPod('default');
+        // Call the watchResourceWithInformer with the listFn
+        await this.informResource(
+            'v1',
+            'pods',
+            async (event) => {
+                console.log('Received event:', event.type, event.meta.name);
+                console.log('Object:', event.object);
+                console.log(new Date().toISOString());
+            },
+            listFnBody,
+        )
+    }
+}
+
+const operator = new MyOperator();
+
+async function main() {
+    await operator.start()
+    const exit = (reason: string) => {
+        console.log(reason)
+        operator.stop()
+        process.exit(0)
+    }
+    process.on('SIGTERM', () => exit('SIGTERM')).on('SIGINT', () => exit('SIGINT'))
+}
+
+main()
+```
+
+### Operator that informs on a custom resource
+
+```typescript
+export default class MyOperator extends Operator {
+    protected async init() {
+        const customObjectsApi = this.kubeConfig.makeApiClient(CustomObjectsApi)
+        const listFnBody = async () => {
+            const res = await customObjectsApi.listClusterCustomObject('group.company.com', 'v1alpha1', 'resources');
+            return {
+                response: res.response,
+                body: res.body as KubernetesListObject<KubernetesObject>,
+            };
+        };
+
+        // Call the watchResourceWithInformer with the listFn
+        await this.informResource(
+            'v1alpha1',
+            'resources',
+            async (event) => {
+                console.log('Received event:', event.type, event.meta.name);
+                console.log('Object:', event.object);
+                console.log(new Date().toISOString());
+            },
+            listFnBody,
+            'group.company.com',
+        )
+    }
+}
+
+const operator = new MyOperator();
+
+async function main() {
+    await operator.start()
+    const exit = (reason: string) => {
+        console.log(reason)
+        operator.stop()
+        process.exit(0)
+    }
+    process.on('SIGTERM', () => exit('SIGTERM')).on('SIGINT', () => exit('SIGINT'))
+}
+
+main()
+```
+
 ### Operator that watches namespaces
 
 ```javascript
@@ -192,7 +274,7 @@ export default class MyOperator extends Operator {
 
 ### Operator that watches a custom resource
 
-You will typicall create an interface to define your custom resource:
+You will typically create an interface to define your custom resource:
 
 ```javascript
 export interface MyCustomResource extends KubernetesObject {
