@@ -36,13 +36,13 @@ jobs:
           echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
           echo '::set-output name=diff::1'
       - uses: actions/setup-node@v2
-        if: steps.vars.outputs.diff == 1 && github.ref == 'refs/heads/main'
+        if: steps.vars.outputs.diff == 1 && startsWith(github.ref, 'refs/heads/main') && startsWith(github.event.head_commit.message, 'chore(release)') && !github.event.act
         with:
           node-version: '14'
           registry-url: 'https://npm.pkg.github.com'
           scope: '@linode'
       - name: Build and publish clients
-        if: steps.vars.outputs.diff == 1 && github.ref == 'refs/heads/main'
+        if: steps.vars.outputs.diff == 1 && startsWith(github.ref, 'refs/heads/main') && startsWith(github.event.head_commit.message, 'chore(release)') && !github.event.act
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
