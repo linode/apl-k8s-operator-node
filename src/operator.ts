@@ -244,11 +244,13 @@ export default abstract class Operator {
                             onEvent,
                         }),
                     (err) => {
-                        if (err) {
+                        if (err.code === 'ECONNRESET') {
+                            console.log(`watch on resource ${id} timed out: Watcher disconnected`)
+                          } else {
                             console.log(`watch on resource ${id} failed: ${this.errorToJson(err)}`)
-                        }
-                        console.log(`restarting watch on resource ${id}`)
-                        setTimeout(startWatch, 200)
+                          }
+                        this.logger.debug(`restarting watch on resource ${id}`);
+                        setTimeout(startWatch, 200);
                     }
                 )
                 .catch((reason) => {
