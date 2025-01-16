@@ -14,7 +14,6 @@ release() {
     local pkg="@linode/apl-k8s-operator@$version"
     echo "Publishing newer package: $pkg"
     npm publish --access public
-    cd -
   fi
 }
 
