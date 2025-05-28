@@ -18,7 +18,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@kubernetes/client-node": "^0.22.3",
+    "@kubernetes/client-node": "^1.2.0",
     "async": "^3.2.6",
     "gaxios": "^6.7.1"
   },
@@ -27,13 +27,13 @@
     "@types/byline": "^4.2.36",
     "@types/js-yaml": "^4.0.9",
     "@types/node": ">=20.0.0",
-    "@types/ws": "^8.5.13",
-    "@typescript-eslint/eslint-plugin": "^8.16.0",
-    "@typescript-eslint/parser": "^8.16.0",
-    "eslint": "^9.15.0",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^8.33.0",
+    "@typescript-eslint/parser": "^8.33.0",
+    "eslint": "^9.27.0",
     "mkdirp": "^3.0.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.8.3"
   },
   "scripts": {
     "lint": "eslint ./src ./*.ts",

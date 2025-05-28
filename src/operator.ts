@@ -10,7 +10,7 @@ import {
     V1CustomResourceDefinition,
     V1CustomResourceDefinitionVersion,
     Watch
-} from '@kubernetes/client-node';
+} from '@kubernetes/client-node'
 import { instance as gaxios, GaxiosOptions, Headers } from 'gaxios'
 
 /**
@@ -165,7 +165,7 @@ export default abstract class Operator {
             if (!apiVersion || !apiVersion.startsWith('apiextensions.k8s.io/')) {
                 throw new Error("Invalid CRD yaml (expected 'apiextensions.k8s.io')")
             }
-            await this.kubeConfig.makeApiClient(k8s.ApiextensionsV1Api).createCustomResourceDefinition(crd)
+            await this.kubeConfig.makeApiClient(k8s.ApiextensionsV1Api).createCustomResourceDefinition({ body: crd })
             console.log(`registered custom resource definition '${crd.metadata?.name}'`)
         } catch (err) {
             // API returns a 409 Conflict if CRD already exists.
@@ -194,7 +194,7 @@ export default abstract class Operator {
             path += `namespaces/${namespace}/`
         }
         path += plural
-        return this.k8sApi.basePath + path
+        return this.kubeConfig.getCurrentCluster()?.server + path
     }
 
     /**
@@ -229,7 +229,7 @@ export default abstract class Operator {
 
         const watch = new Watch(this.kubeConfig)
 
-        const startWatch = (): Promise<void> =>
+        const startWatch = (): Promise<void | AbortController> =>
             watch
                 .watch(
                     uri,
@@ -245,14 +245,16 @@ export default abstract class Operator {
                         }),
                     (err) => {
                         if (err) {
-                            console.log(`watch on resource ${id} failed: ${this.errorToJson(err)}`)
+                            this.logger.error(`watch on resource ${id} failed: ${this.errorToJson(err)}`)
+                            process.exit(1)
                         }
-                        console.log(`restarting watch on resource ${id}`)
+                        this.logger.debug(`restarting watch on resource ${id}`)
                         setTimeout(startWatch, 200)
-                    }
+                    },
                 )
                 .catch((reason) => {
-                    console.log(`watch on resource ${id} failed: ${this.errorToJson(reason)}`)
+                    this.logger.error(`watch on resource ${id} failed: ${this.errorToJson(reason)}`)
+                    process.exit(1)
                 })
                 .then((req) => (this.watchRequests[id] = req))
 
@@ -270,52 +272,52 @@ export default abstract class Operator {
         group?: string,
         namespace?: string
     ): Promise<void> {
-        const apiVersion = group ? `${group}/${version}` : `${version}`;
-        const id = `${plural}.${apiVersion}`;
+        const apiVersion = group ? `${group}/${version}` : `${version}`
+        const id = `${plural}.${apiVersion}`
 
         const path = group
             ? `/apis/${group}/${version}${namespace ? `/namespaces/${namespace}` : ''}/${plural}`
-            : `/api/${version}${namespace ? `/namespaces/${namespace}` : ''}/${plural}`;
+            : `/api/${version}${namespace ? `/namespaces/${namespace}` : ''}/${plural}`
 
 
         // Use the passed-in listFn to retrieve resources
-        const informer = makeInformer<KubernetesObject>(this.kubeConfig, path, listFn);
+        const informer = makeInformer<KubernetesObject>(this.kubeConfig, path, listFn)
 
         informer.on(ADD, (obj: KubernetesObject) => {
             onEvent({
                 type: ResourceEventType.Added,
                 object: obj,
                 meta: ResourceMetaImpl.createWithPlural(plural, obj),
-            });
-        });
+            })
+        })
 
         informer.on(UPDATE, (obj: KubernetesObject) => {
             onEvent({
                 type: ResourceEventType.Modified,
                 object: obj,
                 meta: ResourceMetaImpl.createWithPlural(plural, obj),
-            });
-        });
+            })
+        })
 
         informer.on(DELETE, (obj: KubernetesObject) => {
             onEvent({
                 type: ResourceEventType.Deleted,
                 object: obj,
                 meta: ResourceMetaImpl.createWithPlural(plural, obj),
-            });
-        });
-
-        informer.on(ERROR, (err) => {
-            console.debug(`Informer for ${id} encountered an error:`, err);
-            setTimeout(() => informer.start(), 5000);
-        });
-
-        informer.on(CONNECT, () => {
-            console.log(`Informer for ${id} connected`);
+            })
         })
 
-        console.log(`Starting informer for ${id}`);
-        await informer.start();
+        informer.on(ERROR, (err) => {
+            console.debug(`Informer for ${id} encountered an error:`, err)
+            setTimeout(() => informer.start(), 5000)
+        })
+
+        informer.on(CONNECT, () => {
+            console.log(`Informer for ${id} connected`)
+        })
+
+        console.log(`Starting informer for ${id}`)
+        await informer.start()
     }
 
     /**
