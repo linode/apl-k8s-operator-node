@@ -1,6 +1,6 @@
 {
   "name": "@linode/apl-k8s-operator",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Build Kubernetes operators in NodeJS (and TypeScript)",
   "repository": {
     "type": "git",
