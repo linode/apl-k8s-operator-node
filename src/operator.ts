@@ -188,7 +188,7 @@ export default abstract class Operator {
      * @param plural The plural name of the custom resource
      * @param namespace Optional namespace to include in the uri
      */
-    protected getCustomResourceApiUri(group: string, version: string, plural: string, namespace?: string): string {
+    protected getCustomResourceApiUri(version: string, plural: string, group?: string, namespace?: string): string {
         let path = group ? `/apis/${group}/${version}/` : `/api/${version}/`
         if (namespace) {
             path += `namespaces/${namespace}/`
@@ -274,6 +274,8 @@ export default abstract class Operator {
     ): Promise<void> {
         const apiVersion = group ? `${group}/${version}` : `${version}`
         const id = `${plural}.${apiVersion}`
+
+        this.resourcePathBuilders[id] = (meta) => this.getCustomResourceApiUri(version, plural, group, meta.namespace);
 
         const path = group
             ? `/apis/${group}/${version}${namespace ? `/namespaces/${namespace}` : ''}/${plural}`
